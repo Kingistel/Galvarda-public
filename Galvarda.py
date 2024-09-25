@@ -127,7 +127,8 @@ def BookPage(BookID):
 
     book = Database_Cursor.execute(f"SELECT libavtor.BookId, libbook.Title, libbook.Title1, libavtorname.lfm, libadd.Image, libadd.Annotation FROM libavtor, libbook, libavtorname, libadd WHERE libbook.BookID = {str(BookID)} AND libbook.BookId = libavtor.BookId AND libavtor.AvtorId = libavtorname.AvtorId AND libavtor.BookId = libadd.BookID;")
 
-    book = Database_Cursor.fetchall(); book = book[0]
+    try: book = Database_Cursor.fetchall(); book = book[0]
+    except: abort(404)
 
     if book[4] is None: img = getattr(service.placeholder, 'img')
     else: img = book[4]
