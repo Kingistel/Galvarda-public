@@ -1,0 +1,16 @@
+{% extends 'template.html' %}
+{% block content %}
+
+<div>
+    <div>
+        <img src="data:image/jpeg;base64,{{content.Image}}" alt="Cover image" />
+        <a href="/lib/download/{{content.BookID}}">Скачать</a>
+    </div>
+    <div>
+        <h2>{{content.Title1}} <i>[{{content.Title2}}]</i></h2>
+        <i>{{content.Author}}</i>
+        <p>{{content.Annotation}}</p>
+    </div>
+</div>
+
+{% endblock %}

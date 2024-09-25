@@ -1,0 +1,27 @@
+<html lang="ru">
+<head>
+    <title>Galvarda</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href={{ url_for('static', filename='css/main.css') }}>
+</head>
+<body>
+    <div class="container">
+        <aside>
+            <form action="/lib/search" method="post">
+                <p><input type="text" minlength="5" required name="search" id="search" class="text-field__input"></p>
+                <p><input type="radio" name="SearchTypeRadio" id="r1" value="book" checked />Поиск по названию</p>
+                <p><input type="radio" name="SearchTypeRadio" id="r2" value="author" />Поиск по автору</p>
+                <p><input type="submit" value="Поиск"></p>
+            </form>
+            <br>
+        </aside>
+        <section>
+            {% block content %}
+            {% endblock %}
+        </section>
+        <div class="companies">
+        </div>
+    </div>
+</body>
+</html>
