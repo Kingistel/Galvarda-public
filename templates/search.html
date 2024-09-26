@@ -2,7 +2,7 @@
 {% block content %}
 
 {% for book in content.books %}
-<a href="/lib/download/{{ book.ID }}">Скачать</a> <a href="/lib/book/{{ book.ID }}"><b>{{ book.Title1 }}</b> [{{ book.Title2 }}]</a> <i>{{ book.Author }}</i><br />
+<a href="/lib/download/{{ book.ID }}">Скачать</a> <a href="/lib/book/{{ book.ID }}"><b>{{ book.Title1 }}</b> {{ book.Title2 }}</a> <i>{{ book.Author }}</i><br />
 {% endfor %}
 
 {% endblock %}

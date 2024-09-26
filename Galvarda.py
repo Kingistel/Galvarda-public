@@ -51,9 +51,11 @@ def SearchPage(SearchType=None, SearchReq=None):
     for book in books_q:
         if book[4] is None: img = getattr(service.placeholder, 'img')
         else: img = book[4]
+        if book[2] == '': subTitle = ''
+        else: subTitle = f"[{book[2]}]"
         books.append({'ID' : book[0],
                       'Title1' : book[1],
-                      'Title2' : book[2],
+                      'Title2' : subTitle,
                       'Image' : img,
                       'Annotation' : book[5],
                       'Author' : book[3]})
@@ -134,12 +136,42 @@ def BookPage(BookID):
     if book[4] is None: img = getattr(service.placeholder, 'img')
     else: img = book[4]
 
+    if book[2] == '': subTitle = ''
+    else: subTitle = f"[{book[2]}]"
+
+    reviews_db = Database_Cursor.execute(f"SELECT * FROM libreviews WHERE libreviews.BookId = {BookID} ORDER BY libreviews.Time DESC")
+    reviews_db = Database_Cursor.fetchall()
+
+    reviews = []
+
+    if reviews_db is None: pass
+    else:
+        for review_db in reviews_db:
+            if review_db[0] == '': author_nickname = 'Anon'
+            else: author_nickname = f"[Flibusta] {review_db[0]}"
+            author = {'nickname':author_nickname}
+            review_date_year = f"{review_db[1].year}"
+            review_date_month = f"{review_db[1].month:02d}"
+            review_date_day = f"{review_db[1].day:02d}"
+            
+            review_date = {'year':review_date_year,
+                           'month':review_date_month,
+                           'day':review_date_day}
+            
+            review_body = review_db[3].replace('\\', '')
+
+            review = {'author':author,
+                      'date':review_date,
+                      'body':review_body}
+            reviews.append(review)
+
     content = {'BookID':book[0],
                'Title1':book[1],
-               'Title2':book[2],
+               'Title2':subTitle,
                'Author':book[3],
                'Image':img,
-               'Annotation':book[5]}
+               'Annotation':book[5],
+               'Reviews':reviews}
 
 
     return render_template('book.html', content=content)
