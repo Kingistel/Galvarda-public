@@ -4,7 +4,7 @@ Galvarda - это веб-интерфейс для доступа к базе д
 ## БД
 В качестве основного и единственного сервера базы данных используется MySQL 8. Galvarda рассчитан на использование модифицированных таблиц с *flibusta.domain*/sql. Все скрипты для автоматической модификации базы расположены в ./service .
 
-Таблицы базы данных, 4.4Gb. [torrent](https://github.com/Kingistel/Galvarda-public/blob/main/static/base/galv_sql.torrent)
+Таблицы БД: [Прямая ссылка](http://178.253.23.111:82/)
 
 ## Стек
 Galvarda-public является форком PyGalvarda который написан на Python/Flask, который в свою очередь является форком Galvarda написанного на PHP.
