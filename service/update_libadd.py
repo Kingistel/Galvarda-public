@@ -40,7 +40,7 @@ def magic(BookID):
     Database_Cursor = Database_Conn.cursor()
     BookID = BookID[0]
     print(BookID)
-    imgurl, Annotation = GetContentFromFlib(FlibUrl='https://flibusta.site', BookID=BookID)
+    imgurl, Annotation = GetContentFromFlib(FlibUrl='http://flibusta.site', BookID=BookID)
     if imgurl != None:
         r = requests.get(imgurl, stream=True, timeout=15)
         r.raw.decode_content = True

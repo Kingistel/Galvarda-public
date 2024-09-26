@@ -106,7 +106,8 @@ def DownloadPage(BookID):
         Database_Cursor = Database_Conn.cursor()
         bookarch = Database_Cursor.execute(f"SELECT ArchiveName FROM ArchiveToBook WHERE BookID = {BookID};")
         bookarch = Database_Cursor.fetchall()
-        bookarch = bookarch[0][0]
+        try: bookarch = bookarch[0][0]
+        except: abort(404)
         book = None
         with zipfile.ZipFile(f"{config['WorkMode']['internalStorage']}/{bookarch}.zip", 'r') as zip_ref:
             for file in zip_ref.namelist():
