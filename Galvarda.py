@@ -5,7 +5,7 @@ import requests
 from urllib.request import urlretrieve
 import zipfile
 
-from flask import Flask, abort, request, redirect, url_for, send_file
+from flask import Flask, Response, abort, request, redirect, url_for, send_file
 from flask import render_template
 import service.placeholder
 
@@ -51,13 +51,18 @@ def SearchPage(SearchType=None, SearchReq=None):
     for book in books_q:
         if book[4] is None: img = getattr(service.placeholder, 'img')
         else: img = book[4]
+
         if book[2] == '': subTitle = ''
         else: subTitle = f"[{book[2]}]"
+
+        if len(book[5]) > 186: Annotation = book[5][:186]+'...'
+        else: Annotation = book[5]
+
         books.append({'ID' : book[0],
                       'Title1' : book[1],
                       'Title2' : subTitle,
                       'Image' : img,
-                      'Annotation' : book[5],
+                      'Annotation' : Annotation,
                       'Author' : book[3]})
         
     content['SearchType'] = SearchType
@@ -81,6 +86,7 @@ def DownloadPage(BookID):
     if config.getboolean('WorkMode', 'externalStorage') is True:
         flibusta_links = config['WorkMode']['externalStorageURLs'].split()
 
+        alink = None
         for link in flibusta_links:
             try:
                 requests.head(link, timeout=2)
@@ -88,18 +94,25 @@ def DownloadPage(BookID):
                 break
             except: pass
 
-        r = requests.get(f"{alink}/b/{BookID}/fb2", stream=True, timeout=15)
-        r.raw.decode_content = True
+        if alink is None:
+            return '<p>Отсутствует доступ к внешнему хранилищу / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
+
+        try:
+            r = requests.get(f"{alink}/b/{BookID}/fb2", stream=True, timeout=15)
+            r.raw.decode_content = True
+        except: return '<p>Внешнее хранилище не вернуло книги / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
 
         book = None
-        with zipfile.ZipFile(BytesIO(r.content), 'r') as zip_ref:
-            for file in zip_ref.namelist():
-                if file[-3:] == 'fb2':
-                    book = BytesIO(zip_ref.read(file))
-                    break
+        try:
+            with zipfile.ZipFile(BytesIO(r.content), 'r') as zip_ref:
+                for file in zip_ref.namelist():
+                    if file[-3:] == 'fb2':
+                        book = BytesIO(zip_ref.read(file))
+                        break
+        except: return '<p>Внешнее хранилище вернуло не архив.</p>', 404, {'ContentType':'text/html'}
     
         if book is None:
-            abort(404)
+            return '<p>Внешнее хранилище вернуло архив но в нём не удалось найти книгу.</p>', 404, {'ContentType':'text/html'}
         else:
             return send_file(book, as_attachment=True, mimetype='fb2', download_name=f"{BookID}.fb2")
 
@@ -109,16 +122,20 @@ def DownloadPage(BookID):
         bookarch = Database_Cursor.execute(f"SELECT ArchiveName FROM ArchiveToBook WHERE BookID = {BookID};")
         bookarch = Database_Cursor.fetchall()
         try: bookarch = bookarch[0][0]
-        except: abort(404)
+        except: return '<p>Книга отсутствует в базе локальных книг.</p>', 404, {'ContentType':'text/html'}
         book = None
-        with zipfile.ZipFile(f"{config['WorkMode']['internalStorage']}/{bookarch}.zip", 'r') as zip_ref:
-            for file in zip_ref.namelist():
-                if file == f"{BookID}.fb2":
-                    book = BytesIO(zip_ref.read(file))
-                    break
+
+        try:
+            with zipfile.ZipFile(f"{config['WorkMode']['internalStorage']}/{bookarch}.zip", 'r') as zip_ref:
+                for file in zip_ref.namelist():
+                    if file == f"{BookID}.fb2":
+                        book = BytesIO(zip_ref.read(file))
+                        break
+
+        except: return '<p>Книга найдена в базе локальных книг но не найден архив с ней.</p>', 404, {'ContentType':'text/html'}
     
         if book is None:
-            abort(404)
+            return '<p>Книга найдена в базе локальных книг но не найдена в своём архиве.</p>', 404, {'ContentType':'text/html'}
         else:
             return send_file(book, as_attachment=True, mimetype='fb2', download_name=f"{BookID}.fb2")
 

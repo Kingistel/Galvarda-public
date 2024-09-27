@@ -1,8 +1,26 @@
 {% extends 'template.html' %}
+
+{% block custom_css %}
+<link rel="stylesheet" href={{ url_for('static', filename='css/search.css') }}>
+{% endblock %}
+
 {% block content %}
 
 {% for book in content.books %}
-<a href="/lib/download/{{ book.ID }}">Скачать</a> <a href="/lib/book/{{ book.ID }}"><b>{{ book.Title1 }}</b> {{ book.Title2 }}</a> <i>{{ book.Author }}</i><br />
+<div class="search-book-container">
+    <div class="cover-container">
+        <img src="data:image/jpeg;base64,{{ book.Image }}" alt="book cover" class="cover-img" />
+        <div class="download-link">
+            <a href="/lib/download/{{ book.ID }}">Скачать</a>
+        </div>
+    </div>
+    <div class="search-details">
+            <h3> {{ book.Title1 }} {{ book.Title2 }}</h3>
+            <p><strong>Автор: </strong>{{ book.Author }}</p>
+            <p><strong>Аннотация:</strong></p>
+            {{ book.Annotation }}
+    </div>
+</div>
 {% endfor %}
 
 {% endblock %}

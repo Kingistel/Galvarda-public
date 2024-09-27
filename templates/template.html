@@ -3,6 +3,8 @@
     <title>Galvarda</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    {% block custom_css %}
+    {% endblock %}
     <link rel="stylesheet" href={{ url_for('static', filename='css/main.css') }}>
 </head>
 <body>
