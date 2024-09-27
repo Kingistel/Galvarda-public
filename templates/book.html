@@ -1,21 +1,31 @@
 {% extends 'template.html' %}
+
+{% block custom_css %}
+<link rel="stylesheet" href={{ url_for('static', filename='css/book.css') }}>
+{% endblock %}
+
 {% block content %}
 
 <div>
-    <div>
-        <img src="data:image/jpeg;base64,{{content.Image}}" alt="Cover image" />
-        <a href="/lib/download/{{content.BookID}}">Скачать</a>
-    </div>
-    <div>
-        <h2>{{content.Title1}} <i>{{content.Title2}}</i></h2>
-        <i>{{content.Author}}</i>
-        <p>{{content.Annotation}}</p>
+    <div class="book-container">
+        <div class="cover-container">
+            <img src="data:image/jpeg;base64,{{ content.Image }}" alt="book cover" class="cover-img" />
+            <div class="download-link">
+                <a href="/lib/download/{{ content.BookID }}">Скачать</a>
+            </div>
+        </div>
+        <div class="details">
+            <h3>{{ content.Title1 }} {{ content.Title2 }}</h3>
+            <p><strong>Автор: </strong>{{ content.Author }}</p>
+            <p><strong>Аннотация:</strong></p>
+            {{ content.Annotation }}
+        </div>
     </div>
     <div>
         {% for review in content.Reviews %}
-            <hr />
-            <p style="color:#2478ff;">{{ review.author.nickname }} {{ review.date.day }}.{{ review.date.month }}.{{review.date.year}}</p>
-            <p> {{ review.body }} </p>
+        <hr />
+        <p style="color:#2478ff;">{{ review.author.nickname }} {{ review.date.day }}.{{ review.date.month }}.{{review.date.year}}</p>
+        <p> {{ review.body }} </p>
         {% endfor %}
     </div>
 </div>

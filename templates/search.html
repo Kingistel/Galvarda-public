@@ -15,7 +15,7 @@
         </div>
     </div>
     <div class="search-details">
-            <h3> {{ book.Title1 }} {{ book.Title2 }}</h3>
+            <h3><a href="/lib/book/{{ book.ID }}">{{ book.Title1 }} {{ book.Title2 }}</a></h3>
             <p><strong>Автор: </strong>{{ book.Author }}</p>
             <p><strong>Аннотация:</strong></p>
             {{ book.Annotation }}
