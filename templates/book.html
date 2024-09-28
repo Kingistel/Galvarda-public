@@ -11,7 +11,10 @@
         <div class="cover-container">
             <img src="data:image/jpeg;base64,{{ content.Image }}" alt="book cover" class="cover-img" />
             <div class="download-link">
-                <a href="/lib/download/{{ content.BookID }}">Скачать</a>
+                <a href="/lib/book/{{ content.BookID }}/fb2">Скачать</a>
+            </div>
+            <div class="download-link">
+                <a href="/lib/book/{{ content.BookID }}/read/0">Читать</a>
             </div>
         </div>
         <div class="details">

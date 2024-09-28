@@ -1,0 +1,22 @@
+{% extends 'template.html' %}
+
+{% block custom_css %}
+{% endblock %}
+
+{% block content %}
+
+<div>
+    <div>
+        {{ content.chapter | safe }}
+    </div>
+    <div><!-- Туда-сюдашка -->
+        {% if content.PrevCh != None %}
+            <a href="/lib/book/{{ content.BookID }}/read/{{ content.PrevCh }}"><--</a>
+        {% endif %}
+        {% if content.NextCh != None %}
+            <a href="/lib/book/{{ content.BookID }}/read/{{ content.NextCh }}">--></a>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

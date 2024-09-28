@@ -1,9 +1,12 @@
-from io import BytesIO
+from io import BytesIO, IOBase
+from itertools import filterfalse
 import os, sys, time
 
 import requests
 from urllib.request import urlretrieve
 import zipfile
+from bs4 import BeautifulSoup
+import service.additionally
 
 from flask import Flask, Response, abort, request, redirect, url_for, send_file
 from flask import render_template
@@ -78,68 +81,34 @@ def SearchRedir():
         return redirect(url_for('SearchPage', SearchType=request.form['SearchTypeRadio'], SearchReq=request.form['search']))
     else: return redirect(request.referrer)
 
-@app.route('/lib/download/<BookID>', methods=['GET'])
+@app.route('/lib/book/<BookID>/fb2', methods=['GET'])
 def DownloadPage(BookID):
     config = configparser.ConfigParser();config.read(MainConfigFile)
 
-    if str(BookID).isdigit() == False: abort(403)
-    if config.getboolean('WorkMode', 'externalStorage') is True:
-        flibusta_links = config['WorkMode']['externalStorageURLs'].split()
+    if str(BookID).isdigit() == False: return Response('<p>ID книги не число, не делай так.</p>', 400)
+    book = service.additionally.getBook(BookID, config)
+    if not isinstance(book, IOBase):
+        match book:
+            case 10:
+                return '<p>Отсутствует доступ к внешнему хранилищу / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
+            case 11:
+                return '<p>Внешнее хранилище не вернуло книги / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
+            case 12:
+                return '<p>Внешнее хранилище вернуло не архив.</p>', 404, {'ContentType':'text/html'}
+            case 13:
+                return '<p>Внешнее хранилище вернуло архив но в нём не удалось найти книгу.</p>', 404, {'ContentType':'text/html'}
+            case 14:
+                return '<p>Книга отсутствует в базе локальных книг.</p>', 404, {'ContentType':'text/html'}
+            case 15:
+                return '<p>Книга найдена в базе локальных книг но не найден архив с ней.</p>', 404, {'ContentType':'text/html'}
+            case 16:
+                return '<p>Книга найдена в базе локальных книг но не найдена в архиве.</p>', 404, {'ContentType':'text/html'}
+        abort(404)
 
-        alink = None
-        for link in flibusta_links:
-            try:
-                requests.head(link, timeout=2)
-                alink = link
-                break
-            except: pass
-
-        if alink is None:
-            return '<p>Отсутствует доступ к внешнему хранилищу / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
-
-        try:
-            r = requests.get(f"{alink}/b/{BookID}/fb2", stream=True, timeout=15)
-            r.raw.decode_content = True
-        except: return '<p>Внешнее хранилище не вернуло книги / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
-
-        book = None
-        try:
-            with zipfile.ZipFile(BytesIO(r.content), 'r') as zip_ref:
-                for file in zip_ref.namelist():
-                    if file[-3:] == 'fb2':
-                        book = BytesIO(zip_ref.read(file))
-                        break
-        except: return '<p>Внешнее хранилище вернуло не архив.</p>', 404, {'ContentType':'text/html'}
-    
-        if book is None:
-            return '<p>Внешнее хранилище вернуло архив но в нём не удалось найти книгу.</p>', 404, {'ContentType':'text/html'}
-        else:
-            return send_file(book, as_attachment=True, mimetype='fb2', download_name=f"{BookID}.fb2")
-
-    else:
-        Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database='galv_fb2index')
-        Database_Cursor = Database_Conn.cursor()
-        bookarch = Database_Cursor.execute(f"SELECT ArchiveName FROM ArchiveToBook WHERE BookID = {BookID};")
-        bookarch = Database_Cursor.fetchall()
-        try: bookarch = bookarch[0][0]
-        except: return '<p>Книга отсутствует в базе локальных книг.</p>', 404, {'ContentType':'text/html'}
-        book = None
-
-        try:
-            with zipfile.ZipFile(f"{config['WorkMode']['internalStorage']}/{bookarch}.zip", 'r') as zip_ref:
-                for file in zip_ref.namelist():
-                    if file == f"{BookID}.fb2":
-                        book = BytesIO(zip_ref.read(file))
-                        break
-
-        except: return '<p>Книга найдена в базе локальных книг но не найден архив с ней.</p>', 404, {'ContentType':'text/html'}
-    
-        if book is None:
-            return '<p>Книга найдена в базе локальных книг но не найдена в своём архиве.</p>', 404, {'ContentType':'text/html'}
-        else:
-            return send_file(book, as_attachment=True, mimetype='fb2', download_name=f"{BookID}.fb2")
+    return send_file(book, as_attachment=True, mimetype='fb2', download_name=f"{BookID}.fb2")
 
 @app.route('/lib/book/<BookID>', methods=['GET'])
+@app.route('/lib/book/<BookID>/', methods=['GET'])
 def BookPage(BookID):
     config = configparser.ConfigParser();config.read(MainConfigFile)
     Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database='galv_fb2index')
@@ -192,6 +161,57 @@ def BookPage(BookID):
 
 
     return render_template('book.html', content=content)
+
+@app.route('/lib/book/<BookID>/read/<Chapter>', methods=['GET'])
+def ReadPage(BookID, Chapter):
+    config = configparser.ConfigParser();config.read(MainConfigFile)
+
+    if Chapter.isdigit():
+        Chapter = abs(int(Chapter))
+    else: return Response('<p>Номер главы не число, не делай так.</p>', 400)
+    
+    content = {}
+
+    book = service.additionally.getBook(BookID, config)
+    if not isinstance(book, IOBase):
+        match book:
+            case 10:
+                return '<p>Отсутствует доступ к внешнему хранилищу / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
+            case 11:
+                return '<p>Внешнее хранилище не вернуло книги / внешнее хранилище не успело ответить.</p>', 404, {'ContentType':'text/html'}
+            case 12:
+                return '<p>Внешнее хранилище вернуло не архив.</p>', 404, {'ContentType':'text/html'}
+            case 13:
+                return '<p>Внешнее хранилище вернуло архив но в нём не удалось найти книгу.</p>', 404, {'ContentType':'text/html'}
+            case 14:
+                return '<p>Книга отсутствует в базе локальных книг.</p>', 404, {'ContentType':'text/html'}
+            case 15:
+                return '<p>Книга найдена в базе локальных книг но не найден архив с ней.</p>', 404, {'ContentType':'text/html'}
+            case 16:
+                return '<p>Книга найдена в базе локальных книг но не найдена в архиве.</p>', 404, {'ContentType':'text/html'}
+        abort(404)
+    
+    soup = BeautifulSoup(book, 'xml')
+    chapters_count = len(soup.find('body').find_all('section'))
+    chapter = str(soup.find('body').find_all('section')[Chapter]).replace('<title>', '<h1>').replace('</title>','</h1>')
+    chapter = chapter.replace('<empty-line>','<br>').replace('</empty-line>','</br>')
+    chapter = chapter.replace('<empty-line/>','<br/>')
+    chapter = chapter.replace('<emphasis>','<em>').replace('</emphasis>','</em>')
+    chapter = chapter.replace('<subtitle>','<h2>').replace('</subtitle>','</h2>')
+
+    if Chapter == chapters_count-1:
+        NextCh = None
+    else: NextCh = Chapter+1
+    if Chapter == 0:
+        PrevCh = None
+    else: PrevCh = Chapter-1
+
+    content = {'chapter': chapter,
+               'PrevCh': PrevCh,
+               'NextCh': NextCh,
+               'BookID': BookID}
+
+    return render_template('read.html', content=content)
 
 if __name__ == '__main__':
     app.run(debug=True)
