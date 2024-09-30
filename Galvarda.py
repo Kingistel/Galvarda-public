@@ -24,7 +24,7 @@ if True:
 @app.route('/lib/', methods=['GET'])
 def MainPage():
     config = configparser.ConfigParser();config.read(MainConfigFile)
-    Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database='galv_fb2index')
+    Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database=config['mysql']['db_name'])
     Database_Cursor = Database_Conn.cursor()
     
     content = {}
@@ -39,7 +39,7 @@ def MainPage():
 @app.route('/lib/search/<SearchType>/<SearchReq>', methods=['GET'])
 def SearchPage(SearchType=None, SearchReq=None):
     config = configparser.ConfigParser();config.read(MainConfigFile)
-    Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database='galv_fb2index')
+    Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database=config['mysql']['db_name'])
     Database_Cursor = Database_Conn.cursor()
 
     books = []
@@ -111,7 +111,7 @@ def DownloadPage(BookID):
 @app.route('/lib/book/<BookID>/', methods=['GET'])
 def BookPage(BookID):
     config = configparser.ConfigParser();config.read(MainConfigFile)
-    Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database='galv_fb2index')
+    Database_Conn = mysql.connector.connect(host=config['mysql']['host'], port=config['mysql']['port'], user=config['mysql']['login'], password=config['mysql']['password'], database=config['mysql']['db_name'])
     Database_Cursor = Database_Conn.cursor()
 
     book = Database_Cursor.execute(f"SELECT libavtor.BookId, libbook.Title, libbook.Title1, libavtorname.lfm, libadd.Image, libadd.Annotation FROM libavtor, libbook, libavtorname, libadd WHERE libbook.BookID = {str(BookID)} AND libbook.BookId = libavtor.BookId AND libavtor.AvtorId = libavtorname.AvtorId AND libavtor.BookId = libadd.BookID;")
